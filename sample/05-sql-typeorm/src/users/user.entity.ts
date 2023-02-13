@@ -1,4 +1,6 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {Column, Entity, OneToMany, OneToOne, PrimaryGeneratedColumn} from 'typeorm';
+import {Profile} from './profile.entity';
+import {Wallet, WalletSharing} from './wallet.entity';
 
 @Entity()
 export class User {
@@ -11,6 +13,12 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column({ default: true })
-  isActive: boolean;
+  @OneToOne(() => Profile, p => p.user)
+  profile: Profile
+
+  @OneToMany(() => Wallet, w => w.owner)
+  wallets: Wallet[]
+
+  @OneToMany(() => WalletSharing, ws => ws.user)
+  walletsSharing: WalletSharing[]
 }
