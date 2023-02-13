@@ -4,11 +4,11 @@ import {
   Delete,
   Get,
   HttpCode,
-  NotFoundException,
   Param,
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   CreateQuestionInputDto,
@@ -26,9 +26,14 @@ import { Paginated } from '../../../common-dto/paginated-view';
 import { GetQuestionsQueryParams } from './input-dto/get-questions-query-params';
 import { QuizQuestionsQueryRepo } from './quiz-questions.query-repo';
 import { Result, ResultCode } from '../../../utils/result';
-import { isSuccessOrThrow500 } from '../../../utils/handle-result';
+import {
+  handleResultOrThrowError,
+  handleResultOrThrowHttpException,
+} from '../../../utils/handle-result';
+import { BasicAuthGuard } from '../../../guards/basic-auth.guard';
 
 @Controller('sa/quiz/questions')
+@UseGuards(BasicAuthGuard)
 export class QuestionsSaController {
   constructor(
     private readonly commandBus: CommandBus,
@@ -38,17 +43,13 @@ export class QuestionsSaController {
   @Post()
   @HttpCode(201)
   async createQuestion(@Body() dto: CreateQuestionInputDto): Promise<QuestionViewDto> {
-    const createdId = await this.commandBus.execute<CreateQuestionCommand, string>(
+    const result = await this.commandBus.execute<CreateQuestionCommand, Result<string>>(
       new CreateQuestionCommand(dto),
     );
 
-    const questionResult = await this.questionQueryRepo.getQuestionById(createdId);
+    const questionResult = await this.questionQueryRepo.getQuestionById(result.data);
 
-    if (questionResult.resultCode !== ResultCode.Success || !questionResult.data) {
-      throw new Error('some error');
-    }
-
-    return questionResult.data;
+    return handleResultOrThrowError(questionResult).data;
   }
 
   @Delete(':id')
@@ -57,7 +58,10 @@ export class QuestionsSaController {
     const result = await this.commandBus.execute<DeleteQuestionCommand, Result<null>>(
       new DeleteQuestionCommand(param.id),
     );
-    //TODO: proceed if result error
+
+    handleResultOrThrowHttpException(result);
+
+    return;
   }
 
   @Put(':id')
@@ -70,20 +74,11 @@ export class QuestionsSaController {
       new UpdateQuestionCommand(dto, param.id),
     );
 
-    if (result.resultCode !== ResultCode.Success) {
-      //TODO: handle result
-      throw new NotFoundException(result.extensions[0].message);
-    }
+    handleResultOrThrowHttpException(result);
 
     const questionResult = await this.questionQueryRepo.getQuestionById(param.id);
 
-    //isSuccessOrThrow500(questionResult);
-
-    if (questionResult.resultCode !== ResultCode.Success || !questionResult.data) {
-      throw new Error('some error');
-    }
-
-    return questionResult.data;
+    return handleResultOrThrowError(questionResult).data;
   }
 
   @Put(':id/publish')
@@ -96,7 +91,8 @@ export class QuestionsSaController {
       new PublishQuestionCommand(dto.published, param.id),
     );
 
-    //TODO: proceed if result error
+    handleResultOrThrowHttpException(result);
+
     return;
   }
 
@@ -105,6 +101,8 @@ export class QuestionsSaController {
   async getQuestions(
     @Query() query: GetQuestionsQueryParams,
   ): Promise<Paginated<QuestionViewDto[]>> {
-    return this.questionQueryRepo.getQuestions(query);
+    const result = await this.questionQueryRepo.getQuestions(query);
+
+    return result.data;
   }
 }

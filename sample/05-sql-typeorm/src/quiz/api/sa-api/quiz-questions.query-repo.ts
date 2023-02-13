@@ -17,7 +17,9 @@ export class QuizQuestionsQueryRepo {
     @InjectRepository(Question) private readonly questionRepository: Repository<Question>,
   ) {}
 
-  async getQuestions(query: GetQuestionsQueryParams): Promise<Paginated<QuestionViewDto[]>> {
+  async getQuestions(
+    query: GetQuestionsQueryParams,
+  ): Promise<Result<Paginated<QuestionViewDto[]>>> {
     const { bodySearchTerm, publishedStatus, sortDirection, sortBy, pageNumber, pageSize } = query;
     const filter: { body?: FindOperator<string>; published?: boolean; isDeleted: boolean } = {
       isDeleted: false,
@@ -38,19 +40,21 @@ export class QuizQuestionsQueryRepo {
       order: { [sortBy]: sortDirection.toUpperCase() },
     });
 
-    return Paginated.getPaginated<QuestionViewDto[]>({
-      page: pageNumber,
-      size: pageSize,
-      count: total,
-      items: result.map(question => ({
-        body: question.body,
-        createdAt: question.createdAt,
-        published: question.published,
-        updatedAt: question.updatedAt || null,
-        correctAnswers: question.correctAnswers,
-        id: question.id,
-      })),
-    });
+    return Result.Success(
+      Paginated.getPaginated<QuestionViewDto[]>({
+        page: pageNumber,
+        size: pageSize,
+        count: total,
+        items: result.map(question => ({
+          body: question.body,
+          createdAt: question.createdAt,
+          published: question.published,
+          updatedAt: question.updatedAt || null,
+          correctAnswers: question.correctAnswers,
+          id: question.id,
+        })),
+      }),
+    );
   }
 
   async getQuestionById(id: string): Promise<Result<QuestionViewDto> | Result<null>> {

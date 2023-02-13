@@ -32,7 +32,7 @@ const isExtensions = (
 
 export class Result<T> {
   resultCode: ResultCode;
-  data: T | null;
+  data: T;
   extensions: Extension[];
 
   public static Success<T>(data: T, messageOrExtensions?: string | Extension[]): Result<T> {

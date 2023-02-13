@@ -1,8 +1,9 @@
 import { ArrayNotEmpty, IsArray, IsBoolean, IsString, Length } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateQuestionInputDto {
   @IsString()
-  @Length(3, 500)
+  @Length(10, 500)
   body: string;
 
   @IsArray()

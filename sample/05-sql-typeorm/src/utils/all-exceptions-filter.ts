@@ -33,6 +33,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     console.log('errorDescription', errorDescription);
+    if (status === 400) {
+      response.status(status).json({
+        errorsMessages: errorDescription,
+      });
+
+      return;
+    }
 
     response.status(status).json({
       statusCode: status,
